@@ -1,0 +1,133 @@
+name: vicus-analytics
+
+x-rabbitmq-url: &rabbitmq-url
+  RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq:5672/
+
+# URI format — usado por asyncpg (Python IngestBot)
+x-postgres-dsn: &postgres-dsn
+  POSTGRES_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
+# key=value format — usado por Npgsql (.NET API)
+x-postgres-conn: &postgres-conn
+  POSTGRES_DSN: Host=postgres;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB}
+
+networks:
+  vicus-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: vicus-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - vicus-net
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: vicus-postgres
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB:       ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - vicus-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ── Bots ───────────────────────────────────────────────────────────────────
+
+  alphasig:
+    build:
+      context: ../AlphaSIGCore
+      dockerfile: Dockerfile
+    container_name: vicus-alphasig
+    env_file:
+      - ../AlphaSIGCore/.env
+    environment:
+      <<: *rabbitmq-url
+      DATABASE_URL: /data/alphaSIG.sqlite
+    volumes:
+      - ./data/alphasig:/data
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - vicus-net
+    restart: unless-stopped
+
+  ingest:
+    build:
+      context: ../ingestBot
+      dockerfile: Dockerfile
+    container_name: vicus-ingest
+    environment:
+      <<: [*rabbitmq-url, *postgres-dsn]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - vicus-net
+    restart: unless-stopped
+
+  # ── Platform ───────────────────────────────────────────────────────────────
+
+  api:
+    build:
+      context: ./VicusAnalytics.API
+      dockerfile: Dockerfile
+    container_name: vicus-api
+    environment:
+      <<: *postgres-conn
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5200}
+    ports:
+      - "5100:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vicus-net
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./VicusAnalytics.Web
+      dockerfile: Dockerfile
+    container_name: vicus-web
+    environment:
+      API_BASE_URL: http://api:8080/
+    ports:
+      - "5200:8080"
+    depends_on:
+      - api
+    networks:
+      - vicus-net
+    restart: unless-stopped

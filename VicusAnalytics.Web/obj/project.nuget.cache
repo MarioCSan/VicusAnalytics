@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "dgSpecHash": "yWS+krsp/g4=",
+  "success": true,
+  "projectFilePath": "/Users/mario/Documents/Proyectos/VicusAnalytics/VicusAnalytics.Web/VicusAnalytics.Web.csproj",
+  "expectedPackageFiles": [
+    "/Users/mario/.nuget/packages/microsoft.aspnetcore.connections.abstractions/8.0.0/microsoft.aspnetcore.connections.abstractions.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.aspnetcore.http.connections.client/8.0.0/microsoft.aspnetcore.http.connections.client.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.aspnetcore.http.connections.common/8.0.0/microsoft.aspnetcore.http.connections.common.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.aspnetcore.signalr.client/8.0.0/microsoft.aspnetcore.signalr.client.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.aspnetcore.signalr.client.core/8.0.0/microsoft.aspnetcore.signalr.client.core.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.aspnetcore.signalr.common/8.0.0/microsoft.aspnetcore.signalr.common.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.aspnetcore.signalr.protocols.json/8.0.0/microsoft.aspnetcore.signalr.protocols.json.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.extensions.dependencyinjection/8.0.0/microsoft.extensions.dependencyinjection.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.0/microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.extensions.features/8.0.0/microsoft.extensions.features.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.extensions.logging/8.0.0/microsoft.extensions.logging.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.extensions.logging.abstractions/8.0.0/microsoft.extensions.logging.abstractions.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.extensions.options/8.0.0/microsoft.extensions.options.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/microsoft.extensions.primitives/8.0.0/microsoft.extensions.primitives.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/system.io.pipelines/8.0.0/system.io.pipelines.8.0.0.nupkg.sha512",
+    "/Users/mario/.nuget/packages/system.threading.channels/8.0.0/system.threading.channels.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

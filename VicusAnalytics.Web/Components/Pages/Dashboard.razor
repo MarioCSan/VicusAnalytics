@@ -1,0 +1,254 @@
+@page "/"
+@inject ApiService Api
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard — Vicus Analytics</PageTitle>
+
+<div class="va-page">
+
+    @* ── Period selector ── *@
+    <div style="display:flex; justify-content:flex-end">
+        <div class="va-periods">
+            @foreach (var p in new[] { "1d","7d","30d","90d","all" })
+            {
+                <button class="va-period-btn @(_period == p ? "active" : "")"
+                        @onclick="() => SetPeriod(p)">
+                    @p.ToUpperInvariant()
+                </button>
+            }
+        </div>
+    </div>
+
+    @* ── Stats Cards ── *@
+    @if (_stats is null)
+    {
+        <div class="va-empty">Loading…</div>
+    }
+    else
+    {
+        <div class="va-cards">
+            <div class="va-card">
+                <span class="va-card-label">Total PnL</span>
+                <span class="va-card-value" style="color:@PnlColor(_stats.TotalPnl)">
+                    @(_stats.TotalPnl >= 0 ? "+" : "")$@_stats.TotalPnl.ToString("F2")
+                </span>
+                <span class="va-card-sub">avg @(_stats.AvgPnl >= 0 ? "+" : "")$@_stats.AvgPnl.ToString("F2") / trade</span>
+            </div>
+            <div class="va-card">
+                <span class="va-card-label">Win Rate</span>
+                <span class="va-card-value" style="color:@(_stats.WinRate >= .5m ? "var(--green)" : "var(--red)")">
+                    @((_stats.WinRate * 100).ToString("F1"))%
+                </span>
+                <span class="va-card-sub">@_stats.Wins / @_stats.Resolved resolved</span>
+            </div>
+            <div class="va-card">
+                <span class="va-card-label">Signals</span>
+                <span class="va-card-value" style="color:var(--blue)">@_stats.TotalSignals</span>
+                <span class="va-card-sub">@_stats.Resolved resolved</span>
+            </div>
+            <div class="va-card">
+                <span class="va-card-label">Sharpe</span>
+                <span class="va-card-value" style="color:@SharpeColor(_stats.Sharpe)">
+                    @(_stats.Sharpe.HasValue ? _stats.Sharpe.Value.ToString("F2") : "—")
+                </span>
+                <span class="va-card-sub">risk-adjusted return</span>
+            </div>
+            <div class="va-card">
+                <span class="va-card-label">Best Trade</span>
+                <span class="va-card-value" style="color:var(--green)">
+                    +$@_stats.BestTrade.ToString("F2")
+                </span>
+                <span class="va-card-sub">worst $@_stats.WorstTrade.ToString("F2")</span>
+            </div>
+            <div class="va-card">
+                <span class="va-card-label">Max Drawdown</span>
+                <span class="va-card-value" style="color:var(--yellow)">
+                    -$@_stats.MaxDrawdown.ToString("F2")
+                </span>
+                <span class="va-card-sub">from peak</span>
+            </div>
+        </div>
+    }
+
+    @* ── Charts ── *@
+    <div class="va-charts-grid">
+        <div class="va-section">
+            <div class="va-section-header">PnL Over Time</div>
+            <div class="va-section-body">
+                @if (_pnl is null)
+                {
+                    <div class="va-empty">Loading…</div>
+                }
+                else if (_pnl.Labels.Count == 0)
+                {
+                    <div class="va-empty">No resolved trades in this period</div>
+                }
+                else
+                {
+                    <div class="va-chart-label">Cumulative PnL</div>
+                    <div class="va-chart-wrap"><canvas id="pnl-cum"></canvas></div>
+                    <div class="va-chart-label" style="margin-top:20px">Per-Trade PnL</div>
+                    <div class="va-chart-wrap-sm"><canvas id="pnl-per"></canvas></div>
+                }
+            </div>
+        </div>
+        <div class="va-section">
+            <div class="va-section-header">Edge Distribution</div>
+            <div class="va-section-body">
+                @if (_edge is null)
+                {
+                    <div class="va-empty">Loading…</div>
+                }
+                else if (_edge.Labels.Count == 0)
+                {
+                    <div class="va-empty">No signals yet</div>
+                }
+                else
+                {
+                    <div class="va-chart-label">Edge Distribution</div>
+                    <div class="va-chart-wrap-edge"><canvas id="edge-chart"></canvas></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ── Signals Table ── *@
+    <div class="va-section">
+        <div class="va-section-header">
+            <span>Signals @(_signals is not null ? $"({_signals.Count})" : "")</span>
+            <div class="va-status-filters">
+                @foreach (var s in new[] { "ALL","PENDING","NOTIFIED","EXECUTED","RESOLVED","CANCELLED" })
+                {
+                    <button class="va-status-btn @(_statusFilter == s ? "active" : "")"
+                            @onclick="() => SetStatus(s)">@s</button>
+                }
+            </div>
+        </div>
+        <div class="va-section-body" style="padding:0">
+            @if (_signals is null)
+            {
+                <div class="va-empty">Loading…</div>
+            }
+            else if (_signals.Count == 0)
+            {
+                <div class="va-empty">No signals in this period</div>
+            }
+            else
+            {
+                <div class="va-table-wrap">
+                    <table class="va-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Market</th>
+                                <th>Direction</th>
+                                <th>Edge</th>
+                                <th>Mkt Price</th>
+                                <th>Est. Prob</th>
+                                <th>Size</th>
+                                <th>PnL</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sig in _signals)
+                            {
+                                <tr>
+                                    <td class="muted">@sig.GeneratedAt.ToString("MM/dd HH:mm")</td>
+                                    <td class="trunc" title="@sig.Question">
+                                        @if (!string.IsNullOrEmpty(sig.Slug))
+                                        {
+                                            <a class="link" href="https://polymarket.com/event/@sig.Slug"
+                                               target="_blank" rel="noreferrer">@sig.Question</a>
+                                        }
+                                        else { @sig.Question }
+                                    </td>
+                                    <td><span class="va-badge @DirBadge(sig.Direction)">@sig.Direction</span></td>
+                                    <td class="num">@((sig.Edge * 100).ToString("F1"))%</td>
+                                    <td class="num">@sig.MarketPrice.ToString("F3")</td>
+                                    <td class="num">@sig.EstimatedProb.ToString("F3")</td>
+                                    <td class="num">$@sig.PositionSize.ToString("F0")</td>
+                                    <td class="num @PnlClass(sig.RealizedPnl)">
+                                        @(sig.RealizedPnl.HasValue
+                                            ? (sig.RealizedPnl >= 0 ? "+" : "") + "$" + sig.RealizedPnl.Value.ToString("F2")
+                                            : "—")
+                                    </td>
+                                    <td><span class="va-badge @StatusBadge(sig.Status)">@sig.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _period = "7d";
+    private string _statusFilter = "ALL";
+    private StatsModel? _stats;
+    private PnlChartData? _pnl;
+    private EdgeDistribution? _edge;
+    private List<Signal>? _signals;
+    private bool _chartsNeedUpdate;
+
+    protected override async Task OnInitializedAsync() => await LoadAll();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if ((firstRender || _chartsNeedUpdate) && _pnl is not null && _edge is not null)
+        {
+            _chartsNeedUpdate = false;
+            if (_pnl.Labels.Count > 0)
+                await JS.InvokeVoidAsync("createPnlCharts", _pnl.Labels, _pnl.Cumulative, _pnl.PerTrade);
+            if (_edge.Labels.Count > 0)
+                await JS.InvokeVoidAsync("createEdgeChart", _edge.Labels, _edge.Values);
+        }
+    }
+
+    private async Task SetPeriod(string p)
+    {
+        _period = p;
+        await LoadAll();
+        _chartsNeedUpdate = true;
+    }
+
+    private async Task SetStatus(string s)
+    {
+        _statusFilter = s;
+        _signals = await Api.GetSignalsAsync(_period, _statusFilter);
+    }
+
+    private async Task LoadAll()
+    {
+        var t1 = Api.GetStatsAsync(_period);
+        var t2 = Api.GetPnlChartAsync(_period);
+        var t3 = Api.GetEdgeDistributionAsync(_period);
+        var t4 = Api.GetSignalsAsync(_period, _statusFilter);
+        await Task.WhenAll(t1, t2, t3, t4);
+        _stats   = t1.Result;
+        _pnl     = t2.Result;
+        _edge    = t3.Result;
+        _signals = t4.Result;
+        _chartsNeedUpdate = true;
+    }
+
+    static string PnlColor(decimal v) => v > 0 ? "var(--green)" : v < 0 ? "var(--red)" : "var(--text)";
+    static string PnlClass(decimal? v) => v > 0 ? "green" : v < 0 ? "red" : "";
+    static string SharpeColor(decimal? v) => v > 1 ? "var(--green)" : v < 0 ? "var(--red)" : "var(--text)";
+
+    static string DirBadge(string d) => d switch {
+        "BUY_YES" => "badge-green",
+        "BUY_NO"  => "badge-red",
+        _         => "badge-muted",
+    };
+    static string StatusBadge(string s) => s switch {
+        "NOTIFIED" => "badge-blue",
+        "EXECUTED" => "badge-purple",
+        "RESOLVED" => "badge-green",
+        "PENDING"  => "badge-muted",
+        _          => "badge-muted",
+    };
+}

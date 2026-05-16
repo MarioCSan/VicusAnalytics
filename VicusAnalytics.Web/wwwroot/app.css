@@ -1,0 +1,166 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #21262d;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --green: #3fb950;
+  --red: #f85149;
+  --blue: #58a6ff;
+  --yellow: #d29922;
+  --purple: #bc8cff;
+}
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+button { cursor: pointer; font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Header ── */
+.va-header {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.va-logo { display: flex; align-items: center; gap: 12px; }
+.va-logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff;
+}
+.va-logo-title { font-weight: 700; font-size: 16px; }
+.va-logo-sub   { font-size: 11px; color: var(--text-muted); }
+.va-nav        { display: flex; gap: 4px; }
+.va-nav a {
+  padding: 5px 14px; border-radius: 6px; font-size: 13px;
+  color: var(--text-muted); transition: background .15s, color .15s;
+}
+.va-nav a:hover         { background: var(--surface2); color: var(--text); }
+.va-nav a.active        { background: var(--surface2); color: var(--text); }
+
+/* ── Page ── */
+.va-page {
+  max-width: 1200px; margin: 0 auto;
+  padding: 24px 32px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+/* ── Period Selector ── */
+.va-periods { display: flex; align-items: center; gap: 6px; }
+.va-period-btn {
+  padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted);
+  font-size: 12px; font-weight: 600; transition: all .15s;
+}
+.va-period-btn:hover  { border-color: var(--blue); color: var(--text); }
+.va-period-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(88,166,255,.15); }
+
+/* ── Cards row ── */
+.va-cards { display: flex; gap: 12px; flex-wrap: wrap; }
+.va-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px 20px;
+  display: flex; flex-direction: column; gap: 6px;
+  min-width: 140px; flex: 1;
+}
+.va-card-label {
+  color: var(--text-muted); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.va-card-value {
+  font-size: 24px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.va-card-sub { font-size: 11px; color: var(--text-muted); }
+
+/* ── Section box ── */
+.va-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.va-section-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 600; font-size: 13px;
+}
+.va-section-body { padding: 20px; }
+
+/* ── Charts grid ── */
+.va-charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.va-chart-label {
+  color: var(--text-muted); font-size: 11px;
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 12px;
+}
+.va-chart-wrap      { position: relative; height: 220px; }
+.va-chart-wrap-sm   { position: relative; height: 160px; }
+.va-chart-wrap-edge { position: relative; height: 200px; }
+
+/* ── Status filter buttons ── */
+.va-status-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.va-status-btn {
+  padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted);
+  font-size: 11px; font-weight: 600; transition: all .15s;
+}
+.va-status-btn:hover  { border-color: var(--blue); color: var(--text); }
+.va-status-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(88,166,255,.15); }
+
+/* ── Table ── */
+.va-table-wrap { overflow-x: auto; }
+.va-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.va-table th {
+  padding: 8px 12px; text-align: left;
+  color: var(--text-muted); font-weight: 600;
+  white-space: nowrap; border-bottom: 1px solid var(--border);
+}
+.va-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.va-table tbody tr { transition: background .1s; }
+.va-table tbody tr:nth-child(even)  { background: rgba(255,255,255,.01); }
+.va-table tbody tr:hover            { background: var(--surface2); }
+.va-table .num { font-variant-numeric: tabular-nums; }
+.va-table .muted { color: var(--text-muted); white-space: nowrap; }
+.va-table .green { color: var(--green); font-weight: 600; }
+.va-table .red   { color: var(--red);   font-weight: 600; }
+.va-table .link:hover { color: var(--blue); }
+.va-table .trunc { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Badge ── */
+.va-badge {
+  display: inline-block;
+  padding: 2px 7px; border-radius: 4px;
+  font-size: 11px; font-weight: 600;
+}
+.badge-green  { color: var(--green);  background: rgba(63,185,80,.13);  }
+.badge-red    { color: var(--red);    background: rgba(248,81,73,.13);  }
+.badge-blue   { color: var(--blue);   background: rgba(88,166,255,.13); }
+.badge-purple { color: var(--purple); background: rgba(188,140,255,.13);}
+.badge-muted  { color: var(--text-muted); background: rgba(139,148,158,.13); }
+.badge-yellow { color: var(--yellow); background: rgba(210,153,34,.13); }
+
+/* ── Empty / Loading states ── */
+.va-empty { color: var(--text-muted); text-align: center; padding: 40px; }
+
+@media (max-width: 900px) {
+  .va-charts-grid { grid-template-columns: 1fr; }
+  .va-page { padding: 16px; }
+  .va-header { padding: 12px 16px; }
+}

@@ -1,0 +1,94 @@
+@page "/signals"
+@inject ApiService Api
+@rendermode InteractiveServer
+
+<PageTitle>Signals — Vicus Analytics</PageTitle>
+
+<div class="va-page">
+    <div class="va-section">
+        <div class="va-section-header">
+            <span>Signals @(_signals is not null ? $"({_signals.Count})" : "")</span>
+            <div style="display:flex; gap:8px; align-items:center">
+                <div class="va-status-filters">
+                    @foreach (var s in new[] { "ALL","PENDING","NOTIFIED","EXECUTED","RESOLVED","CANCELLED" })
+                    {
+                        <button class="va-status-btn @(_status == s ? "active" : "")"
+                                @onclick="() => SetStatus(s)">@s</button>
+                    }
+                </div>
+            </div>
+        </div>
+        <div style="padding:0">
+            @if (_signals is null)
+            {
+                <div class="va-empty">Loading…</div>
+            }
+            else if (_signals.Count == 0)
+            {
+                <div class="va-empty">No signals found</div>
+            }
+            else
+            {
+                <div class="va-table-wrap">
+                    <table class="va-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Market</th>
+                                <th>Direction</th>
+                                <th>Edge</th>
+                                <th>Mkt Price</th>
+                                <th>Est. Prob</th>
+                                <th>Size</th>
+                                <th>PnL</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sig in _signals)
+                            {
+                                <tr>
+                                    <td class="muted">@sig.GeneratedAt.ToString("MM/dd HH:mm")</td>
+                                    <td class="trunc" title="@sig.Question">
+                                        @if (!string.IsNullOrEmpty(sig.Slug))
+                                        {
+                                            <a class="link" href="https://polymarket.com/event/@sig.Slug"
+                                               target="_blank" rel="noreferrer">@sig.Question</a>
+                                        }
+                                        else { @sig.Question }
+                                    </td>
+                                    <td><span class="va-badge @DirBadge(sig.Direction)">@sig.Direction</span></td>
+                                    <td class="num">@((sig.Edge * 100).ToString("F1"))%</td>
+                                    <td class="num">@sig.MarketPrice.ToString("F3")</td>
+                                    <td class="num">@sig.EstimatedProb.ToString("F3")</td>
+                                    <td class="num">$@sig.PositionSize.ToString("F0")</td>
+                                    <td class="num @PnlClass(sig.RealizedPnl)">
+                                        @(sig.RealizedPnl.HasValue
+                                            ? (sig.RealizedPnl >= 0 ? "+" : "") + "$" + sig.RealizedPnl.Value.ToString("F2")
+                                            : "—")
+                                    </td>
+                                    <td><span class="va-badge @StatusBadge(sig.Status)">@sig.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Signal>? _signals;
+    private string _status = "ALL";
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task SetStatus(string s) { _status = s; await Reload(); }
+    private async Task Reload() =>
+        _signals = await Api.GetSignalsAsync("all", _status == "ALL" ? null : _status, 500);
+
+    static string DirBadge(string d) => d switch { "BUY_YES" => "badge-green", "BUY_NO" => "badge-red", _ => "badge-muted" };
+    static string StatusBadge(string s) => s switch { "NOTIFIED" => "badge-blue", "EXECUTED" => "badge-purple", "RESOLVED" => "badge-green", _ => "badge-muted" };
+    static string PnlClass(decimal? v) => v > 0 ? "green" : v < 0 ? "red" : "";
+}

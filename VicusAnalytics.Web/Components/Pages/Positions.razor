@@ -1,0 +1,94 @@
+@page "/positions"
+@inject ApiService Api
+@rendermode InteractiveServer
+
+<PageTitle>Positions — Vicus Analytics</PageTitle>
+
+<div class="va-page">
+    <div class="va-section">
+        <div class="va-section-header">
+            <span>Positions @(_positions is not null ? $"({_positions.Count})" : "")</span>
+            <div class="va-status-filters">
+                @foreach (var s in new[] { "ALL", "OPEN", "CLOSED" })
+                {
+                    <button class="va-status-btn @(_status == s ? "active" : "")"
+                            @onclick="() => SetStatus(s)">@s</button>
+                }
+            </div>
+        </div>
+        <div style="padding:0">
+            @if (_positions is null)
+            {
+                <div class="va-empty">Loading…</div>
+            }
+            else if (_positions.Count == 0)
+            {
+                <div class="va-empty">No positions found</div>
+            }
+            else
+            {
+                <div class="va-table-wrap">
+                    <table class="va-table">
+                        <thead>
+                            <tr>
+                                <th>Opened</th>
+                                <th>Market</th>
+                                <th>Direction</th>
+                                <th>Entry</th>
+                                <th>Size USD</th>
+                                <th>Status</th>
+                                <th>Exit</th>
+                                <th>Reason</th>
+                                <th>PnL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in _positions)
+                            {
+                                <tr>
+                                    <td class="muted">@p.OpenedAt.ToString("MM/dd HH:mm")</td>
+                                    <td class="trunc" title="@p.Question">@(p.Question ?? p.MarketId)</td>
+                                    <td>
+                                        @if (p.Direction is not null)
+                                        {
+                                            <span class="va-badge @(p.Direction == "BUY_YES" ? "badge-green" : "badge-red")">
+                                                @p.Direction
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="num">@p.EntryPrice.ToString("F3")</td>
+                                    <td class="num">$@p.SizeUsd.ToString("F0")</td>
+                                    <td>
+                                        <span class="va-badge @(p.Status == "OPEN" ? "badge-yellow" : "badge-muted")">
+                                            @p.Status
+                                        </span>
+                                    </td>
+                                    <td class="num">@(p.ExitPrice.HasValue ? p.ExitPrice.Value.ToString("F3") : "—")</td>
+                                    <td class="muted">@(p.ExitReason ?? "—")</td>
+                                    <td class="num @PnlClass(p.RealizedPnl)">
+                                        @(p.RealizedPnl.HasValue
+                                            ? (p.RealizedPnl >= 0 ? "+" : "") + "$" + p.RealizedPnl.Value.ToString("F2")
+                                            : "—")
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Position>? _positions;
+    private string _status = "ALL";
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task SetStatus(string s) { _status = s; await Reload(); }
+    private async Task Reload() =>
+        _positions = await Api.GetPositionsAsync(_status == "ALL" ? null : _status, 500);
+
+    static string PnlClass(decimal? v) => v > 0 ? "green" : v < 0 ? "red" : "";
+}
